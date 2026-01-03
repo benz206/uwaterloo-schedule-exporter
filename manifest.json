@@ -6,6 +6,7 @@
   "icons": {
     "128": "icon.png"
   },
+  "permissions": ["declarativeNetRequest"],
   "content_scripts": [
     {
       "matches": ["https://quest.pecs.uwaterloo.ca/*"],
@@ -13,5 +14,14 @@
       "js": ["jquery-2.2.3.min.js", "moment-with-locales.min.js", "main.js"]
     }
   ],
-  "host_permissions": ["https://quest.pecs.uwaterloo.ca/*"]
+  "host_permissions": ["https://quest.pecs.uwaterloo.ca/*"],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "origin_agent_cluster",
+        "enabled": true,
+        "path": "dnr-rules.json"
+      }
+    ]
+  }
 }

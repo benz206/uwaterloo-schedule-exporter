@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        {
+          "header": "Origin-Agent-Cluster",
+          "operation": "set",
+          "value": "?1"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||quest.pecs.uwaterloo.ca/*",
+      "resourceTypes": ["main_frame", "sub_frame"]
+    }
+  }
+]
+

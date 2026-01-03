@@ -142,6 +142,7 @@ function getLocale() {
  * Extracts course schedule info and creates a downloadable iCalendar (.ics) file.
  */
 let main = function () {
+  logger("main:start");
   let iCalContentLab = [];
   let iCalContentTut = [];
   let iCalContentLec = [];
@@ -151,12 +152,18 @@ let main = function () {
   let numberOfEvents = 0;
 
   moment.locale(getLocale());
+  logger("main:locale=" + getLocale());
 
+  logger("main:courseBoxes=" + $(".PSGROUPBOXWBO").length);
   $(".PSGROUPBOXWBO").each(function () {
     let eventTitle = $(this).find(".PAGROUPDIVIDER").text().split(" - ");
     let courseCode = eventTitle[0];
     let courseName = eventTitle[1];
+    logger("main:course=" + courseCode + " name=" + courseName);
     let componentRows = $(this).find(".PSLEVEL3GRID").find("tr");
+    logger(
+      "main:componentRows=" + componentRows.length + " course=" + courseCode
+    );
 
     componentRows.each(function () {
       let classNumber = $(this)
@@ -164,6 +171,14 @@ let main = function () {
         .text();
       let section = $(this).find('a[id*="MTG_SECTION"]').text();
       let component = $(this).find('span[id*="MTG_COMP"]').text();
+      logger(
+        "main:row:init classNumber=" +
+          classNumber +
+          " section=" +
+          section +
+          " component=" +
+          component
+      );
 
       let prev = $(this).prev();
       while (classNumber.length === 1) {
@@ -175,11 +190,31 @@ let main = function () {
 
       let daysTimes = $(this).find('span[id*="MTG_SCHED"]').text();
       let startEndTimes = daysTimes.match(/\d\d?:\d\d([AP]M)?/g);
+      logger(
+        "main:row:daysTimes=" +
+          daysTimes.replace(/(\r\n|\n|\r)/gm, " ") +
+          " startEndTimes=" +
+          (startEndTimes ? startEndTimes.join(",") : "none") +
+          " component=" +
+          component +
+          " section=" +
+          section +
+          " classNumber=" +
+          classNumber
+      );
 
       if (startEndTimes) {
         let daysOfWeek = getDaysOfWeek(daysTimes.match(/[A-Za-z]* /)[0]);
         let startTime = startEndTimes[0];
         let endTime = startEndTimes[1];
+        logger(
+          "main:event:times daysOfWeek=" +
+            daysOfWeek +
+            " startTime=" +
+            startTime +
+            " endTime=" +
+            endTime
+        );
 
         let room = $(this).find('span[id*="MTG_LOC"]').text();
         let instructor = $(this)
@@ -187,6 +222,14 @@ let main = function () {
           .text();
         instructor = instructor.replace(/(\r\n|\n|\r)/gm, ""); // Strip any line breaks
         let startEndDate = $(this).find('span[id*="MTG_DATES"]').text();
+        logger(
+          "main:event:meta room=" +
+            room +
+            " instructor=" +
+            instructor +
+            " startEndDate=" +
+            startEndDate
+        );
         //alert(startEndDate); // Debugging
         //alert(startEndDate.substring(13, 23));
 
@@ -199,6 +242,12 @@ let main = function () {
         //startDate.setDate(startDate.getDate() - 1); // Start one day before the start date.
         let days = daysOfWeek.split(",");
         startDate = incrementDateDay(startDate, days);
+        logger(
+          "main:event:startDate=" +
+            startDate.toISOString() +
+            " timezone=" +
+            timezone
+        );
 
         // End the event one day after the actual end date. Technically, the RRULE UNTIL field should
         // be the start time of the last occurrence of an event. However, since the field does not
@@ -209,6 +258,7 @@ let main = function () {
           "MM/DD/YYYY"
         ).toDate();
         endDate.setDate(endDate.getDate() + 1);
+        logger("main:event:endDate=" + endDate.toISOString());
 
         let iCalContent =
           "BEGIN:VEVENT\r\n" +
@@ -277,6 +327,12 @@ let main = function () {
           //'EXDATE;TZID=' + timezone + ':' + getDateTimeString(startDate, startTime) + '\r\n' +
           "END:VEVENT\r\n";
 
+        logger(
+          "main:event:generated component=" +
+            component +
+            " course=" +
+            courseCode
+        );
         //alert(iCalContent); // Debugging
 
         // Remove double spaces from content.
@@ -292,16 +348,30 @@ let main = function () {
           iCalContentTst.push(iCalContent);
         } else if (component === "SEM") {
           iCalContentSem.push(iCalContent);
+        } else {
+          logger(
+            "main:event:unknownComponent=" + component + " course=" + courseCode
+          );
         }
         numberOfEvents++;
+        logger("main:eventsSoFar=" + numberOfEvents);
         //alert(numberOfEvents);
+      } else {
+        logger(
+          "main:row:skipped (no times) component=" +
+            component +
+            " course=" +
+            courseCode
+        );
       }
     });
   });
 
   // If no events were found, notify the user. Otherwise, proceed to download the ICS file.
   if ($(".PATRANSACTIONTITLE").text().indexOf("Download") < 0) {
+    logger("main:downloadLinks:notPresentYet");
     if (numberOfEvents === 0) {
+      logger("main:noEventsFound");
       $(".PATRANSACTIONTITLE")
         .append(' (<a href="#">Download Schedule</a>)')
         .click(function () {
@@ -313,12 +383,23 @@ let main = function () {
     } else {
       let studentName = $("#DERIVED_SSTSNAV_PERSON_NAME").text().toLowerCase();
       studentName = studentName.replace(/\ /g, "-"); // Replace spaces with dashes.
+      logger("main:studentName=" + studentName);
 
       let fileNameLab = studentName + "-lab-schedule.ics";
       let fileNameTut = studentName + "-tut-schedule.ics";
       let fileNameLec = studentName + "-lec-schedule.ics";
       let fileNameTst = studentName + "-tst-schedule.ics";
       let fileNameSem = studentName + "-sem-schedule.ics";
+      logger(
+        "main:fileNames=" +
+          [
+            fileNameLab,
+            fileNameTut,
+            fileNameLec,
+            fileNameTst,
+            fileNameSem,
+          ].join(",")
+      );
 
       let downloadLinks = [
         {
@@ -345,11 +426,12 @@ let main = function () {
           name: fileNameSem,
           content: wrapICalContent(iCalContentSem.join("")),
           type: "Sem",
-        }
+        },
       ];
 
       downloadLinks.forEach((link) => {
         if (link.content.includes("BEGIN:VEVENT")) {
+          logger("main:link:add type=" + link.type + " name=" + link.name);
           $(".PATRANSACTIONTITLE").append(
             ' (<a href="data:text/calendar;charset=UTF-8,' +
               encodeURIComponent(link.content) +
@@ -359,13 +441,20 @@ let main = function () {
               link.type +
               " Schedule</a>)"
           );
+        } else {
+          logger(
+            "main:link:skipEmpty type=" + link.type + " name=" + link.name
+          );
         }
       });
     }
+  } else {
+    logger("main:downloadLinks:alreadyPresent");
   }
+  logger("main:done totalEvents=" + numberOfEvents);
 };
 
-let debug = false;
+let debug = true;
 /**
  * Debug logging
  * @param {String} string ('4:30PM')
@@ -377,24 +466,52 @@ function logger(string) {
 }
 
 $(document).ready(function () {
-  // Debugging
-  //debug = true;
   logger("Document ready");
+  logger("frame:top=" + (window.top === window));
+  logger("url=" + location.href);
   // Execute main function only when user is in the Enroll/my_class_schedule tab.
   //logger(document.getElementById("DERIVED_REGFRM1_SS_TRANSACT_TITLE").textContent);
-  if (
-    document.getElementById("DERIVED_REGFRM1_SS_TRANSACT_TITLE") &&
-    document.getElementById("DERIVED_REGFRM1_SS_TRANSACT_TITLE").textContent ===
-      "My Class Schedule"
-  ) {
+  let titleEl = document.getElementById("DERIVED_REGFRM1_SS_TRANSACT_TITLE");
+  let titleText =
+    titleEl && titleEl.textContent ? titleEl.textContent.trim() : "";
+  logger("page:titleText=" + titleText);
+
+  let urlIsSchedule =
+    location.href.indexOf("SSR_SSENRL_LIST") >= 0 ||
+    location.href.indexOf("Page=SSR_SSENRL_LIST") >= 0;
+  let titleIsSchedule = titleText.indexOf("My Class Schedule") >= 0;
+  let hasCourseBoxes = $(".PSGROUPBOXWBO").length > 0;
+
+  logger(
+    "page:signals titleIsSchedule=" +
+      titleIsSchedule +
+      " urlIsSchedule=" +
+      urlIsSchedule +
+      " courseBoxes=" +
+      $(".PSGROUPBOXWBO").length
+  );
+
+  if (titleIsSchedule || (urlIsSchedule && hasCourseBoxes)) {
+    logger("page:Schedule page detected");
     // Only display the download button when the user is in List View.
-    logger(
-      document.getElementById("DERIVED_REGFRM1_SSR_SCHED_FORMAT$258$").checked
+    let listViewEl = document.getElementById(
+      "DERIVED_REGFRM1_SSR_SCHED_FORMAT$258$"
     );
-    if (
-      document.getElementById("DERIVED_REGFRM1_SSR_SCHED_FORMAT$258$").checked
-    ) {
-      main();
+    logger("view:listViewElPresent=" + !!listViewEl);
+    if (listViewEl) {
+      logger("view:listViewChecked=" + listViewEl.checked);
     }
+
+    if (listViewEl && listViewEl.checked) {
+      logger("view:List View detected");
+      main();
+    } else if (!listViewEl) {
+      logger("view:listViewToggleMissing; running main()");
+      main();
+    } else {
+      logger("view:not List View; skipping main()");
+    }
+  } else {
+    logger("page:not My Class Schedule; skipping main()");
   }
 });
