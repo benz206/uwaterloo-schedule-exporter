@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "uWaterloo Schedule Exporter (Custom)",
-  "version": "1.10",
+  "version": "1.11",
   "description": "Export your University of Waterloo class schedule directly from Quest into separate calendars.",
   "icons": {
     "128": "icon.png"
