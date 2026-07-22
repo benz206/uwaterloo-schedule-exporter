@@ -23,6 +23,6 @@ OR just download this and unzip the file to a directory.
 
 2. Go to `chrome://extensions` in your Chrome browser, make sure `Developer mode` is checked, and click `Load unpacked extension...`. Select the directory where you cloned this repository.
 
-3. Go to Class Schedule, select the term, then select Weekly Calendar View and return to List View. Switching back and forth is required to load the document so the extension can recognize this event.
+3. Go to Class Schedule on Quest and select the term. The exporter panel appears automatically above your schedule (make sure you are in List View).
 
-4. Download whichever calendar you want as separate `.ics` files.
+4. Download whichever calendar you want as separate `.ics` files, or use **Download All (.zip)** to grab every calendar at once.
